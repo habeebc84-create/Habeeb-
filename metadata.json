@@ -1,0 +1,7 @@
+{
+  "name": "DealSpot Connect",
+  "description": "A marketplace connecting local shops offering deals with customers, powered by Google Maps grounding.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
