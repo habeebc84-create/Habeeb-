@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Loader2, Navigation, ShoppingBag, Info, LogOut, Menu, Zap, LayoutGrid, Star, ArrowRight, User, Building2 } from 'lucide-react';
+import { Search, MapPin, Loader2, ShoppingBag, LogOut, Star, ArrowRight, User, Building2, Info } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { searchDeals } from './services/geminiService';
 import { DealResult, LocationState } from './types';
 import { DealCard } from './components/DealCard';
 import { SenderModal } from './components/SenderModal';
 import { RideModal } from './components/RideModal';
+import { BookingModal } from './components/BookingModal';
 import { ReviewSection } from './components/ReviewSection';
 
 // High quality realistic images for the landing page
@@ -24,10 +25,13 @@ const SELLER_LANDING_IMAGES = [
     "https://images.unsplash.com/photo-1472851294608-415105022054?q=80&w=1600&auto=format&fit=crop"
 ];
 
-type AppView = 'landing' | 'shopper' | 'seller_dashboard' | 'reviews';
+// Combine all for splash screen
+const SPLASH_IMAGES = [...SHOPPER_LANDING_IMAGES, ...SELLER_LANDING_IMAGES];
+
+type AppView = 'splash' | 'landing' | 'shopper' | 'seller_dashboard' | 'reviews';
 
 const App: React.FC = () => {
-  const [view, setView] = useState<AppView>('landing');
+  const [view, setView] = useState<AppView>('splash');
   
   // Search State
   const [query, setQuery] = useState('');
@@ -39,8 +43,9 @@ const App: React.FC = () => {
   
   // Modals state
   const [rideModalConfig, setRideModalConfig] = useState<{isOpen: boolean, dest: string}>({ isOpen: false, dest: '' });
+  const [bookingModalConfig, setBookingModalConfig] = useState<{isOpen: boolean, placeName: string, placeUri?: string}>({ isOpen: false, placeName: '', placeUri: '' });
   
-  // Image Rotation State (Every 1 minute)
+  // Image Rotation State
   const [imageIndex, setImageIndex] = useState(0);
 
   useEffect(() => {
@@ -54,6 +59,7 @@ const App: React.FC = () => {
 
   const currentShopperImage = SHOPPER_LANDING_IMAGES[imageIndex % SHOPPER_LANDING_IMAGES.length];
   const currentSellerImage = SELLER_LANDING_IMAGES[imageIndex % SELLER_LANDING_IMAGES.length];
+  const currentSplashImage = SPLASH_IMAGES[imageIndex % SPLASH_IMAGES.length];
 
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -92,8 +98,8 @@ const App: React.FC = () => {
     }
   };
 
-  const handleBook = (placeName: string) => {
-    alert(`Booking initiated for ${placeName}!`);
+  const handleBook = (placeName: string, placeUri?: string) => {
+    setBookingModalConfig({ isOpen: true, placeName, placeUri });
   };
 
   const handleRide = (placeName: string) => {
@@ -101,10 +107,47 @@ const App: React.FC = () => {
   };
 
   const handleLogout = () => {
-    setView('landing');
+    setView('splash');
     setResult(null);
     setQuery('');
   };
+
+  // --- RENDER: SPLASH SCREEN ---
+  if (view === 'splash') {
+    return (
+        <div className="h-screen w-screen relative overflow-hidden flex flex-col items-center justify-center bg-black">
+             {/* Background with Slow Fade Transition */}
+             <div className="absolute inset-0 z-0">
+                 <img 
+                    key={`splash-${imageIndex}`} 
+                    src={currentSplashImage} 
+                    className="w-full h-full object-cover animate-in fade-in duration-1000 opacity-60"
+                 />
+                 <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+             </div>
+
+             {/* Content */}
+             <div className="glass-panel p-12 rounded-[40px] z-10 text-center animate-in zoom-in fade-in duration-1000 max-w-lg mx-4 border border-white/20 shadow-2xl shadow-blue-900/40">
+                <div className="bg-gradient-to-tr from-blue-600 to-indigo-600 w-24 h-24 rounded-3xl mx-auto mb-8 flex items-center justify-center shadow-lg shadow-blue-600/50 transform rotate-3 hover:rotate-6 transition-transform">
+                    <ShoppingBag className="text-white w-12 h-12" />
+                </div>
+                
+                <h1 className="text-6xl font-extrabold text-white mb-2 text-glow tracking-tight">DealSpot</h1>
+                <p className="text-2xl text-blue-200 mb-10 font-light tracking-[0.5em] uppercase opacity-90">HABEEB</p>
+                
+                <button 
+                    onClick={() => setView('landing')} 
+                    className="group relative px-10 py-4 bg-white text-slate-900 font-bold text-lg rounded-full overflow-hidden hover:scale-105 transition-all shadow-xl shadow-white/20"
+                >
+                    <span className="relative z-10 flex items-center gap-2">
+                        Enter Marketplace <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform"/>
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+             </div>
+        </div>
+    );
+  }
 
   // --- RENDER: LANDING PAGE ---
   if (view === 'landing') {
@@ -117,7 +160,7 @@ const App: React.FC = () => {
         >
            {/* Background Image with Slow Zoom */}
            <img 
-              key={`shopper-${imageIndex}`} // Key change triggers animation
+              key={`shopper-${imageIndex}`}
               src={currentShopperImage} 
               alt="Shopper Background" 
               className="absolute inset-0 w-full h-full object-cover animate-in fade-in duration-1000 transform scale-100 group-hover:scale-110 transition-transform duration-[20s] ease-linear"
@@ -305,9 +348,11 @@ const App: React.FC = () => {
                        <p className="text-slate-400">Try searching for a different category or area.</p>
                        <div className="mt-6 bg-white/5 p-6 rounded-xl text-left max-w-2xl mx-auto border border-white/10">
                           <h4 className="text-sm font-bold text-blue-400 mb-2 uppercase tracking-wider">AI Insight</h4>
-                          <ReactMarkdown className="prose prose-invert prose-sm max-w-none text-slate-300">
-                            {result.text}
-                          </ReactMarkdown>
+                          <div className="prose prose-invert prose-sm max-w-none text-slate-300">
+                            <ReactMarkdown>
+                                {result.text}
+                            </ReactMarkdown>
+                          </div>
                        </div>
                     </div>
                  )}
@@ -322,6 +367,14 @@ const App: React.FC = () => {
         isOpen={rideModalConfig.isOpen}
         onClose={() => setRideModalConfig({ ...rideModalConfig, isOpen: false })}
         destination={rideModalConfig.dest}
+      />
+      
+      {/* Booking Modal */}
+      <BookingModal 
+        isOpen={bookingModalConfig.isOpen}
+        onClose={() => setBookingModalConfig({ ...bookingModalConfig, isOpen: false })}
+        placeName={bookingModalConfig.placeName}
+        placeUri={bookingModalConfig.placeUri}
       />
     </div>
   );
