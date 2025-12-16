@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { GroundingChunk } from '../types';
-import { MapPin, Star, ExternalLink, Calendar, Car, Zap, Percent, Gift, Sparkles, Clock, Loader2, Share2, Image as ImageIcon, Map as MapIcon, Maximize2, X } from 'lucide-react';
+import { MapPin, Star, ExternalLink, Calendar, Car, Zap, Percent, Gift, Sparkles, Clock, Loader2, Share2, Map as MapIcon, Maximize2, X } from 'lucide-react';
 
 interface DealCardProps {
   place: GroundingChunk;
@@ -22,6 +22,10 @@ export const DealCard: React.FC<DealCardProps> = ({ place, onBook, onRide }) => 
   // Generate a consistent pseudo-random image based on the title
   const seed = mapData.title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const imageUrl = `https://picsum.photos/seed/${seed}/500/300`;
+
+  // Deterministically assign a placeholder color based on seed
+  const placeholderColors = ['bg-slate-800', 'bg-zinc-800', 'bg-stone-800', 'bg-gray-800', 'bg-neutral-800', 'bg-slate-900'];
+  const placeholderColor = placeholderColors[seed % placeholderColors.length];
 
   // Deterministically assign a "Deal Type" based on the seed for demo purposes
   const dealTypes = [
@@ -73,23 +77,24 @@ export const DealCard: React.FC<DealCardProps> = ({ place, onBook, onRide }) => 
   return (
     <>
       <div className="glass-panel rounded-2xl overflow-hidden flex flex-col h-full card-3d group border border-white/10 hover:border-white/30 bg-slate-900/40">
-        <div className="relative h-52 w-full overflow-hidden bg-slate-800">
+        <div className="relative h-52 w-full overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent z-10" />
           
-          {/* Placeholder / Loading State */}
-          {!imageLoaded && (
-              <div className="absolute inset-0 flex items-center justify-center bg-slate-800 animate-pulse z-0">
-                  <ImageIcon className="text-slate-700 w-10 h-10" />
-              </div>
-          )}
+          {/* Refined Placeholder: Solid Color with subtle pulse, fading out when image loads */}
+          <div className={`absolute inset-0 ${placeholderColor} transition-opacity duration-700 z-0 ${imageLoaded ? 'opacity-0' : 'opacity-100'}`}>
+              <div className="absolute inset-0 bg-white/5 animate-pulse" />
+          </div>
 
-          {/* Background Image with Lazy Loading & Transition */}
+          {/* Background Image with Blur-Up Transition */}
           <img 
             src={imageUrl} 
             alt={mapData.title} 
             loading="lazy"
             onLoad={() => setImageLoaded(true)}
-            className={`w-full h-full object-cover transform group-hover:scale-110 transition-all duration-700 filter brightness-90 group-hover:brightness-100 ${imageLoaded ? 'opacity-100 blur-0' : 'opacity-0 blur-xl'}`}
+            className={`w-full h-full object-cover transform transition-all duration-1000 ease-out
+                ${imageLoaded ? 'opacity-100 blur-0 scale-100' : 'opacity-0 blur-xl scale-105'}
+                group-hover:scale-110 filter brightness-90 group-hover:brightness-100
+            `}
           />
           
           {/* Dynamic Deal Badge */}

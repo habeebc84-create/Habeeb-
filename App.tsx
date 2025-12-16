@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { Search, MapPin, Loader2, ShoppingBag, LogOut, Star, ArrowRight, User, Building2, Info } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, MapPin, Loader2, ShoppingBag, LogOut, Star, ArrowRight, User, Building2, Info, X, TrendingUp, History } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { searchDeals } from './services/geminiService';
 import { DealResult, LocationState } from './types';
@@ -28,6 +28,22 @@ const SELLER_LANDING_IMAGES = [
 // Combine all for splash screen
 const SPLASH_IMAGES = [...SHOPPER_LANDING_IMAGES, ...SELLER_LANDING_IMAGES];
 
+// Mock Data for Suggestions
+const POPULAR_SEARCHES = [
+  "Coffee shops with wifi", 
+  "Gym membership deals", 
+  "Spa and massage offers", 
+  "Italian restaurants nearby", 
+  "Hotels with swimming pool", 
+  "Hair salon appointments", 
+  "Yoga classes for beginners", 
+  "Buy 1 Get 1 Pizza", 
+  "Burger discounts", 
+  "Dental checkup offers", 
+  "Car wash services", 
+  "Pet grooming nearby"
+];
+
 type AppView = 'splash' | 'landing' | 'shopper' | 'seller_dashboard' | 'reviews';
 
 const App: React.FC = () => {
@@ -41,6 +57,10 @@ const App: React.FC = () => {
   const [result, setResult] = useState<DealResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   
+  // Suggestions State
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchContainerRef = useRef<HTMLFormElement>(null);
+
   // Modals state
   const [rideModalConfig, setRideModalConfig] = useState<{isOpen: boolean, dest: string}>({ isOpen: false, dest: '' });
   const [bookingModalConfig, setBookingModalConfig] = useState<{isOpen: boolean, placeName: string, placeUri?: string}>({ isOpen: false, placeName: '', placeUri: '' });
@@ -80,22 +100,48 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query.trim()) return;
+  // Handle clicks outside search to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const performSearch = async (searchQuery: string) => {
+    if (!searchQuery.trim()) return;
 
     setLoading(true);
     setError(null);
     setResult(null);
+    setShowSuggestions(false);
     
     try {
-      const data = await searchDeals(query, location);
+      const data = await searchDeals(searchQuery, location);
       setResult(data);
     } catch (err) {
       setError("Failed to fetch deals.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    performSearch(query);
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setQuery(suggestion);
+    performSearch(suggestion);
+  };
+
+  const handleClearSearch = () => {
+    setQuery('');
+    setShowSuggestions(false);
   };
 
   const handleBook = (placeName: string, placeUri?: string) => {
@@ -111,6 +157,11 @@ const App: React.FC = () => {
     setResult(null);
     setQuery('');
   };
+
+  // Filter suggestions
+  const filteredSuggestions = POPULAR_SEARCHES.filter(item => 
+    item.toLowerCase().includes(query.toLowerCase()) && item.toLowerCase() !== query.toLowerCase()
+  );
 
   // --- RENDER: SPLASH SCREEN ---
   if (view === 'splash') {
@@ -292,12 +343,12 @@ const App: React.FC = () => {
         ) : (
           <div className="space-y-8">
              {/* Search Hero */}
-             <div className="text-center space-y-4 max-w-2xl mx-auto mb-12">
+             <div className="text-center space-y-4 max-w-2xl mx-auto mb-12 relative z-30">
                <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white mb-4">
                   Find the <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-pink-500">best deals</span> nearby.
                </h1>
                
-               <form onSubmit={handleSearch} className="relative group">
+               <form onSubmit={handleSearch} className="relative group" ref={searchContainerRef}>
                  <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-pink-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-1000"></div>
                  <div className="relative">
                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -305,11 +356,28 @@ const App: React.FC = () => {
                    </div>
                    <input
                      type="text"
-                     className="block w-full pl-12 pr-4 py-4 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all shadow-xl"
+                     className="block w-full pl-12 pr-32 py-4 bg-slate-900 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all shadow-xl"
                      placeholder="Search for 'coffee deals', 'gym offers', 'spa discounts'..."
                      value={query}
-                     onChange={(e) => setQuery(e.target.value)}
+                     onChange={(e) => {
+                       setQuery(e.target.value);
+                       setShowSuggestions(true);
+                     }}
+                     onFocus={() => setShowSuggestions(true)}
                    />
+                   
+                   {/* Clear Button */}
+                   {query && (
+                     <button
+                       type="button"
+                       onClick={handleClearSearch}
+                       className="absolute right-28 top-1/2 -translate-y-1/2 p-2 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                       title="Clear search"
+                     >
+                       <X size={16} />
+                     </button>
+                   )}
+
                    <button 
                     type="submit" 
                     className="absolute right-2 top-2 bottom-2 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors flex items-center"
@@ -318,6 +386,28 @@ const App: React.FC = () => {
                      {loading ? <Loader2 className="animate-spin h-5 w-5" /> : "Search"}
                    </button>
                  </div>
+
+                 {/* Suggestions Dropdown */}
+                 {showSuggestions && filteredSuggestions.length > 0 && (
+                   <div className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="max-h-64 overflow-y-auto">
+                        <div className="px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider bg-black/20">
+                          {query ? 'Suggestions' : 'Popular Searches'}
+                        </div>
+                        {filteredSuggestions.map((suggestion, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => handleSuggestionClick(suggestion)}
+                            className="w-full text-left px-4 py-3 hover:bg-blue-600/20 text-slate-300 hover:text-white transition-colors flex items-center gap-3 border-b border-white/5 last:border-0"
+                          >
+                            {query ? <Search size={14} className="opacity-50" /> : <TrendingUp size={14} className="opacity-50 text-blue-400" />}
+                            <span>{suggestion}</span>
+                          </button>
+                        ))}
+                      </div>
+                   </div>
+                 )}
                </form>
              </div>
 

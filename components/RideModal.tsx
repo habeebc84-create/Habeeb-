@@ -14,11 +14,12 @@ export const RideModal: React.FC<RideModalProps> = ({ isOpen, onClose, destinati
   const handleBook = (service: 'rapido' | 'uber') => {
       let url = '';
       if (service === 'rapido') {
-          // Redirect to Rapido website
+          // Rapido web doesn't support deep linking destination via URL parameters easily.
+          // Fallback to main site.
           url = 'https://www.rapido.bike/';
       } else if (service === 'uber') {
-           // Redirect to Uber mobile web with destination pre-filled if possible, otherwise just the site
-           url = `https://m.uber.com/looking?drop=${encodeURIComponent(destination)}`;
+           // Redirect to Uber Universal Link with pickup set to current location and drop-off to destination
+           url = `https://m.uber.com/ul/?action=setPickup&pickup=my_location&drop[formatted_address]=${encodeURIComponent(destination)}`;
       }
       window.open(url, '_blank');
   };
