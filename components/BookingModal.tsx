@@ -9,10 +9,10 @@ interface BookingModalProps {
   placeUri?: string;
 }
 
-type BookingType = 'dining' | 'hotel' | 'resort' | 'appointment';
+type BookingType = 'hotel' | 'resort';
 
 export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, placeName, placeUri }) => {
-  const [bookingType, setBookingType] = useState<BookingType>('appointment');
+  const [bookingType, setBookingType] = useState<BookingType>('hotel');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   
@@ -26,14 +26,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, pla
   // Simple heuristic to guess type based on name
   useEffect(() => {
     const lowerName = placeName.toLowerCase();
-    if (lowerName.includes('hotel') || lowerName.includes('inn') || lowerName.includes('lodge') || lowerName.includes('stay')) {
-        setBookingType('hotel');
-    } else if (lowerName.includes('resort') || lowerName.includes('villa') || lowerName.includes('retreat')) {
+    if (lowerName.includes('resort') || lowerName.includes('villa') || lowerName.includes('retreat')) {
         setBookingType('resort');
-    } else if (lowerName.includes('cafe') || lowerName.includes('restaurant') || lowerName.includes('bistro') || lowerName.includes('bar') || lowerName.includes('kitchen')) {
-        setBookingType('dining');
     } else {
-        setBookingType('appointment');
+        setBookingType('hotel');
     }
   }, [placeName]);
 
@@ -71,8 +67,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, pla
 
   if (!isOpen) return null;
 
-  const isHotelOrResort = bookingType === 'hotel' || bookingType === 'resort';
-
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div className="glass-panel w-full max-w-lg rounded-2xl bg-slate-900 border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -97,7 +91,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, pla
                 <>
                     {/* Booking Type Selector */}
                     <div className="flex bg-black/40 p-1 rounded-xl">
-                        {(['dining', 'hotel', 'resort', 'appointment'] as BookingType[]).map((type) => (
+                        {(['hotel', 'resort'] as BookingType[]).map((type) => (
                             <button
                                 key={type}
                                 onClick={() => setBookingType(type)}
@@ -109,45 +103,43 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, pla
                     </div>
 
                     {/* === External Booking Links for Hotels === */}
-                    {isHotelOrResort && (
-                        <div className="bg-blue-900/20 border border-blue-500/30 rounded-xl p-4 animate-in slide-in-from-top duration-300">
-                            <h3 className="text-sm font-bold text-blue-200 mb-3 flex items-center gap-2">
-                                <Globe size={16} /> Instant Online Booking
-                            </h3>
-                            <div className="grid grid-cols-2 gap-3">
-                                <button 
-                                    onClick={() => handleExternalBooking('google')}
-                                    className="flex items-center justify-center gap-2 p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all group"
-                                >
-                                    <span className="font-bold text-white text-sm">Google</span>
-                                    <ExternalLink size={12} className="text-slate-400 group-hover:text-white" />
-                                </button>
-                                <button 
-                                    onClick={() => handleExternalBooking('booking')}
-                                    className="flex items-center justify-center gap-2 p-3 bg-[#003580]/80 hover:bg-[#003580] border border-white/10 rounded-xl transition-all shadow-lg"
-                                >
-                                    <span className="font-bold text-white text-sm">Booking.com</span>
-                                </button>
-                                <button 
-                                    onClick={() => handleExternalBooking('agoda')}
-                                    className="flex items-center justify-center gap-2 p-3 bg-slate-800 hover:bg-slate-700 border border-white/10 rounded-xl transition-all"
-                                >
-                                    <span className="font-bold text-white text-sm">Agoda</span>
-                                </button>
-                                <button 
-                                    onClick={() => handleExternalBooking('mmt')}
-                                    className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-red-600 to-red-500 hover:brightness-110 border border-white/10 rounded-xl transition-all"
-                                >
-                                    <span className="font-bold text-white text-sm">MakeMyTrip</span>
-                                </button>
-                            </div>
-                            <div className="flex items-center gap-2 mt-4 text-[10px] text-slate-400 justify-center uppercase tracking-widest font-semibold">
-                                <div className="h-px bg-white/10 flex-1"></div>
-                                OR CONTACT PROPERTY
-                                <div className="h-px bg-white/10 flex-1"></div>
-                            </div>
+                    <div className="bg-blue-900/20 border border-blue-500/30 rounded-xl p-4 animate-in slide-in-from-top duration-300">
+                        <h3 className="text-sm font-bold text-blue-200 mb-3 flex items-center gap-2">
+                            <Globe size={16} /> Instant Online Booking
+                        </h3>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button 
+                                onClick={() => handleExternalBooking('google')}
+                                className="flex items-center justify-center gap-2 p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all group"
+                            >
+                                <span className="font-bold text-white text-sm">Google</span>
+                                <ExternalLink size={12} className="text-slate-400 group-hover:text-white" />
+                            </button>
+                            <button 
+                                onClick={() => handleExternalBooking('booking')}
+                                className="flex items-center justify-center gap-2 p-3 bg-[#003580]/80 hover:bg-[#003580] border border-white/10 rounded-xl transition-all shadow-lg"
+                            >
+                                <span className="font-bold text-white text-sm">Booking.com</span>
+                            </button>
+                            <button 
+                                onClick={() => handleExternalBooking('agoda')}
+                                className="flex items-center justify-center gap-2 p-3 bg-slate-800 hover:bg-slate-700 border border-white/10 rounded-xl transition-all"
+                            >
+                                <span className="font-bold text-white text-sm">Agoda</span>
+                            </button>
+                            <button 
+                                onClick={() => handleExternalBooking('mmt')}
+                                className="flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-red-600 to-red-500 hover:brightness-110 border border-white/10 rounded-xl transition-all"
+                            >
+                                <span className="font-bold text-white text-sm">MakeMyTrip</span>
+                            </button>
                         </div>
-                    )}
+                        <div className="flex items-center gap-2 mt-4 text-[10px] text-slate-400 justify-center uppercase tracking-widest font-semibold">
+                            <div className="h-px bg-white/10 flex-1"></div>
+                            OR CONTACT PROPERTY
+                            <div className="h-px bg-white/10 flex-1"></div>
+                        </div>
+                    </div>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
@@ -181,7 +173,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, pla
 
                         <div>
                             <label className="block text-xs font-medium text-slate-400 mb-1">
-                                {isHotelOrResort ? 'Guests' : 'Party Size'}
+                                Guests
                             </label>
                             <div className="relative">
                                 <Users size={14} className="absolute left-3 top-3.5 text-slate-500" />
